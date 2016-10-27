@@ -10,6 +10,8 @@ import (
 
 // Digamma returns the logorithmic derivative of the gamma function at x.
 //  ψ(x) = d/dx (Ln (Γ(x)).
+// Note that if x is a negative integer in [-7, 0] this function will return
+// negative Inf.
 func Digamma(x float64) float64 {
 	// This is adapted from
 	// http://web.science.mq.edu.au/~mjohnson/code/digamma.c

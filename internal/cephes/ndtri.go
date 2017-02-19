@@ -96,55 +96,57 @@ var Q2 = [8]float64{
 // Ndtri returns the argument, x, for which the area under the
 // Gaussian probability density function (integrated from
 // minus infinity to x) is equal to y.
-func Ndtri(y0 float64) float64 {
+func Ndtri(y float64) float64 {
 	// For small arguments 0 < y < exp(-2), the program computes
 	// z = math.Sqrt( -2.0 * math.Log(y) );  then the approximation is
 	// x = z - math.Log(z)/z  - (1/z) P(1/z) / Q(1/z).
 	// There are two rational functions P/Q, one for 0 < y < exp(-32)
 	// and the other for y up to exp(-2).  For larger arguments,
 	// w = y - 0.5, and  x/math.Sqrt(2pi) = w + w**3 R(w**2)/S(w**2)).
-	var x, y, z, y2, x0, x1 float64
-	var code int
-
-	if y0 <= 0.0 {
-		if y0 < 0 {
+	if y <= 0.0 {
+		if y < 0 {
 			panic(badParamOutOfBounds)
 		}
 		return math.Inf(-1)
 	}
-	if y0 >= 1.0 {
-		if y0 > 1 {
+	if y >= 1.0 {
+		if y > 1 {
 			panic(badParamOutOfBounds)
 		}
 		return math.Inf(1)
 	}
-	code = 1
-	y = y0
-	if y > (1.0 - 0.13533528323661269189) { /* 0.135... = exp(-2) */
+	code := 1
+	if y > 1.0-0.13533528323661269189 { /* 0.135... = exp(-2) */
 		y = 1.0 - y
 		code = 0
 	}
 
 	if y > 0.13533528323661269189 {
-		y = y - 0.5
-		y2 = y * y
-		x = y + y*(y2*polevl(y2, P0[:], 4)/p1evl(y2, Q0[:], 8))
-		x = x * s2pi
-		return (x)
+		y -= 0.5
+		y2 := y * y
+
+		ap0 := (((P0[0]*y2+P0[1])*y2+P0[2])*y2+P0[3])*y2 + P0[4]
+		aq0 := (((((((y2+Q0[0])*y2+Q0[1])*y2+Q0[2])*y2+Q0[3])*y2+Q0[4])*y2+Q0[5])*y2+Q0[6])*y2 + Q0[7]
+		return s2pi * (y + y*(y2*ap0/aq0))
 	}
 
-	x = math.Sqrt(-2.0 * math.Log(y))
-	x0 = x - math.Log(x)/x
+	x := math.Sqrt(-2.0 * math.Log(y))
+	x0 := x - math.Log(x)/x
 
-	z = 1.0 / x
+	z := 1.0 / x
+	var x1 float64
 	if x < 8.0 { /* y > exp(-32) = 1.2664165549e-14 */
-		x1 = z * polevl(z, P1[:], 8) / p1evl(z, Q1[:], 8)
+		ap1 := (((((((P1[0]*z+P1[1])*z+P1[2])*z+P1[3])*z+P1[4])*z+P1[5])*z+P1[6])*z+P1[7])*z + P1[8]
+		aq1 := (((((((z+Q1[0])*z+Q1[1])*z+Q1[2])*z+Q1[3])*z+Q1[4])*z+Q1[5])*z+Q1[6])*z + Q1[7]
+		x1 = z * ap1 / aq1
 	} else {
-		x1 = z * polevl(z, P2[:], 8) / p1evl(z, Q2[:], 8)
+		ap2 := (((((((P2[0]*z+P2[1])*z+P2[2])*z+P2[3])*z+P2[4])*z+P2[5])*z+P2[6])*z+P2[7])*z + P2[8]
+		aq2 := (((((((z+Q2[0])*z+Q2[1])*z+Q2[2])*z+Q2[3])*z+Q2[4])*z+Q2[5])*z+Q2[6])*z + Q2[7]
+		x1 = z * ap2 / aq2
 	}
 	x = x0 - x1
 	if code != 0 {
-		x = -x
+		x *= -1
 	}
-	return (x)
+	return x
 }
